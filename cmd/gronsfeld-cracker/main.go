@@ -5,57 +5,13 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
+
+	"github.com/arturbasinki/gronsfeld-cracker/internal/dictionary"
 )
 
 const alphabet = " abcdefghijklmnopqrstuvwxyz"
-
-type dictionary map[string]struct{}
-
-// Create a new dictionary
-func newDictionary() *dictionary {
-	return &dictionary{}
-}
-func (d *dictionary) add(s string) {
-	(*d)[s] = struct{}{}
-}
-func (d *dictionary) contains(s string) bool {
-	_, ok := (*d)[s]
-	return ok
-}
-
-// loadDictionary function loads text file from path to a dictionary
-func loadDictionary(path string) (*dictionary, error) {
-	dict := newDictionary()
-
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		word := scanner.Text()
-		dict.add(word)
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-
-	return dict, nil
-}
-func keyGen(limit int) <-chan int {
-	c := make(chan int)
-	go func() {
-		for i := 1; i < limit; i++ {
-			c <- i
-		}
-		close(c)
-	}()
-	return c
-}
 
 func getCiphertext() string {
 	var cipherText string
@@ -74,16 +30,22 @@ func main() {
 	ciphertext := getCiphertext()
 	// fmt.Println(ciphertext)
 
-	dictionary, err := loadDictionary("slownik.txt")
+	absPath, err := filepath.Abs("slownik.txt")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Iterate through each word in ciphertext and check if it's in dictionary
-	for _, word := range strings.Fields(ciphertext) {
-		if dictionary.contains(word) {
-			fmt.Println(word)
-		}
+	dictionary, err := dictionary.LoadDictionary(absPath)
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	fmt.Printf("%s is in dict: %v\n", ciphertext, dictionary.Contains(ciphertext))
+	// // Iterate through each word in ciphertext and check if it's in dictionary
+	// for _, word := range strings.Fields(ciphertext) {
+	// 	if dictionary.contains(word) {
+	// 		fmt.Println(word)
+	// 	}
+	// }
 
 }
